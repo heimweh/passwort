@@ -60,6 +60,7 @@ func (*SealRequest) Descriptor() ([]byte, []int) {
 type SealResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	Shares        []string               `protobuf:"bytes,2,rep,name=shares,proto3" json:"shares,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -99,6 +100,13 @@ func (x *SealResponse) GetError() string {
 		return x.Error
 	}
 	return ""
+}
+
+func (x *SealResponse) GetShares() []string {
+	if x != nil {
+		return x.Shares
+	}
+	return nil
 }
 
 type UnsealRequest struct {
@@ -738,9 +746,10 @@ var File_api_vault_proto protoreflect.FileDescriptor
 const file_api_vault_proto_rawDesc = "" +
 	"\n" +
 	"\x0fapi/vault.proto\x12\x05vault\"\r\n" +
-	"\vSealRequest\"$\n" +
+	"\vSealRequest\"<\n" +
 	"\fSealResponse\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"#\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\x12\x16\n" +
+	"\x06shares\x18\x02 \x03(\tR\x06shares\"#\n" +
 	"\rUnsealRequest\x12\x12\n" +
 	"\x04keys\x18\x01 \x03(\tR\x04keys\"&\n" +
 	"\x0eUnsealResponse\x12\x14\n" +

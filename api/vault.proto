@@ -18,6 +18,7 @@ service VaultService {
 message SealRequest {}
 message SealResponse {
   string error = 1;
+  repeated string shares = 2;
 }
 
 message UnsealRequest {

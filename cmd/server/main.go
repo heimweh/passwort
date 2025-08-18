@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net"
@@ -28,6 +28,14 @@ type vaultServer struct {
 }
 
 func (s *vaultServer) Seal(ctx context.Context, req *vaultpb.SealRequest) (*vaultpb.SealResponse, error) {
+	// If JSONStore, return shares if possible
+	if js, ok := s.store.(*vault.JSONStore); ok {
+		shares, err := js.SealAndGetShares()
+		if err != nil {
+			return &vaultpb.SealResponse{Error: err.Error()}, nil
+		}
+		return &vaultpb.SealResponse{Shares: shares}, nil
+	}
 	err := s.store.Seal()
 	if err != nil {
 		return &vaultpb.SealResponse{Error: err.Error()}, nil
@@ -88,34 +96,65 @@ func (s *vaultServer) Init(ctx context.Context, req *vaultpb.InitRequest) (*vaul
 	if err != nil {
 		return &vaultpb.InitResponse{Error: err.Error()}, nil
 	}
-	// Get shares from the store
-	ms, ok := s.store.(*vault.MemoryStore)
-	if !ok {
-		return &vaultpb.InitResponse{Error: "internal error: not a MemoryStore"}, nil
+	if ms, ok := s.store.(*vault.MemoryStore); ok {
+		shares, err := ms.GetShares()
+		if err != nil {
+			return &vaultpb.InitResponse{Error: err.Error()}, nil
+		}
+		return &vaultpb.InitResponse{Shares: shares}, nil
 	}
-	shares, err := ms.GetShares()
-	if err != nil {
-		return &vaultpb.InitResponse{Error: err.Error()}, nil
+	if js, ok := s.store.(*vault.JSONStore); ok {
+		shares, err := js.SealAndGetShares()
+		if err != nil {
+			return &vaultpb.InitResponse{Error: err.Error()}, nil
+		}
+		return &vaultpb.InitResponse{Shares: shares}, nil
 	}
-	return &vaultpb.InitResponse{Shares: shares}, nil
-}
-
-func initVault(store *vault.MemoryStore) {
-	key := make([]byte, 32)
-	if _, err := rand.Read(key); err != nil {
-		logger.Error("Failed to generate key", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
-	setMemoryStoreKey(store, key)
-	logger.Info("Vault initialized with new key. Please seal to generate shares.")
+	return &vaultpb.InitResponse{Error: "internal error: unknown store type"}, nil
 }
 
 func main() {
+	var storeType, filePath string
+	flag.StringVar(&storeType, "store", "memory", "Store type: memory or json")
+	flag.StringVar(&filePath, "file", "vault.json", "Path to JSON file (for json store)")
+	flag.Parse()
+
 	logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
-	ms := vault.NewMemoryStore()
-	store = ms
+
+	var s vault.Store
+	var jsonStore *vault.JSONStore
+	if storeType == "json" {
+		jsonStore = vault.NewJSONStore(filePath)
+		s = jsonStore
+		logger.Info("Using JSONStore", slog.String("file", filePath))
+	} else {
+		s = vault.NewMemoryStore()
+		logger.Info("Using MemoryStore")
+	}
+	store = s
 
 	if len(os.Args) > 1 && os.Args[1] == "init" {
+		if storeType == "json" {
+			if err := jsonStore.Init(); err != nil {
+				logger.Error("Init can only be run once: ", slog.String("error", err.Error()))
+				os.Exit(1)
+			}
+			shares, err := jsonStore.SealAndGetShares()
+			if err != nil {
+				logger.Error("Failed to get shares", slog.String("error", err.Error()))
+				os.Exit(1)
+			}
+			fmt.Println("Distribute these shares securely. You need at least 2 to unseal:")
+			for i, s := range shares {
+				fmt.Printf("Share %d: %s\n", i+1, s)
+			}
+			return
+		}
+		ms, ok := s.(*vault.MemoryStore)
+		if !ok {
+			logger.Error("Internal error: not a MemoryStore")
+			os.Exit(1)
+		}
 		if err := ms.Init(); err != nil {
 			logger.Error("Init can only be run once: ", slog.String("error", err.Error()))
 			os.Exit(1)
