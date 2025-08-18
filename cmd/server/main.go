@@ -29,9 +29,9 @@ type vaultServer struct {
 }
 
 func (s *vaultServer) Seal(ctx context.Context, req *vaultpb.SealRequest) (*vaultpb.SealResponse, error) {
-	// If JSONStore, return shares if possible
-	if js, ok := s.store.(*vault.JSONStore); ok {
-		shares, err := js.SealAndGetShares()
+	// If FilesystemStore, return shares if possible
+	if fs, ok := s.store.(*vault.FilesystemStore); ok {
+		shares, err := fs.SealAndGetShares()
 		if err != nil {
 			return &vaultpb.SealResponse{Error: err.Error()}, nil
 		}
@@ -104,8 +104,8 @@ func (s *vaultServer) Init(ctx context.Context, req *vaultpb.InitRequest) (*vaul
 		}
 		return &vaultpb.InitResponse{Shares: shares}, nil
 	}
-	if js, ok := s.store.(*vault.JSONStore); ok {
-		shares, err := js.SealAndGetShares()
+	if fs, ok := s.store.(*vault.FilesystemStore); ok {
+		shares, err := fs.SealAndGetShares()
 		if err != nil {
 			return &vaultpb.InitResponse{Error: err.Error()}, nil
 		}
@@ -123,11 +123,11 @@ func main() {
 	logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	var s vault.Store
-	var jsonStore *vault.JSONStore
+	var filesystemStore *vault.FilesystemStore
 	if storeType == "json" {
-		jsonStore = vault.NewJSONStore(filePath)
-		s = jsonStore
-		logger.Info("Using JSONStore", slog.String("file", filePath))
+		filesystemStore = vault.NewFilesystemStore(filePath)
+		s = filesystemStore
+		logger.Info("Using FilesystemStore", slog.String("file", filePath))
 	} else {
 		s = vault.NewMemoryStore()
 		logger.Info("Using MemoryStore")
@@ -136,11 +136,11 @@ func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == "init" {
 		if storeType == "json" {
-			if err := jsonStore.Init(); err != nil {
+			if err := filesystemStore.Init(); err != nil {
 				logger.Error("Init can only be run once: ", slog.String("error", err.Error()))
 				os.Exit(1)
 			}
-			shares, err := jsonStore.SealAndGetShares()
+			shares, err := filesystemStore.SealAndGetShares()
 			if err != nil {
 				logger.Error("Failed to get shares", slog.String("error", err.Error()))
 				os.Exit(1)
