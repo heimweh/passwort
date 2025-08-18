@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"log/slog"
 	"net"
 	"os"
@@ -81,9 +83,54 @@ func (s *vaultServer) List(ctx context.Context, req *vaultpb.ListRequest) (*vaul
 	return &vaultpb.ListResponse{Keys: keys}, nil
 }
 
+func (s *vaultServer) Init(ctx context.Context, req *vaultpb.InitRequest) (*vaultpb.InitResponse, error) {
+	err := s.store.Init()
+	if err != nil {
+		return &vaultpb.InitResponse{Error: err.Error()}, nil
+	}
+	// Get shares from the store
+	ms, ok := s.store.(*vault.MemoryStore)
+	if !ok {
+		return &vaultpb.InitResponse{Error: "internal error: not a MemoryStore"}, nil
+	}
+	shares, err := ms.GetShares()
+	if err != nil {
+		return &vaultpb.InitResponse{Error: err.Error()}, nil
+	}
+	return &vaultpb.InitResponse{Shares: shares}, nil
+}
+
+func initVault(store *vault.MemoryStore) {
+	key := make([]byte, 32)
+	if _, err := rand.Read(key); err != nil {
+		logger.Error("Failed to generate key", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	setMemoryStoreKey(store, key)
+	logger.Info("Vault initialized with new key. Please seal to generate shares.")
+}
+
 func main() {
 	logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
-	store = vault.NewMemoryStore()
+	ms := vault.NewMemoryStore()
+	store = ms
+
+	if len(os.Args) > 1 && os.Args[1] == "init" {
+		if err := ms.Init(); err != nil {
+			logger.Error("Init can only be run once: ", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		shares, err := ms.GetShares()
+		if err != nil {
+			logger.Error("Failed to get shares", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		fmt.Println("Distribute these shares securely. You need at least 2 to unseal:")
+		for i, s := range shares {
+			fmt.Printf("Share %d: %s\n", i+1, s)
+		}
+		return
+	}
 
 	// Start gRPC server
 	grpcServer := grpc.NewServer()
@@ -108,4 +155,9 @@ func main() {
 		logger.Error("gRPC server failed", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
+}
+
+// setMemoryStoreKey sets the key field of MemoryStore (helper for init)
+func setMemoryStoreKey(ms *vault.MemoryStore, key []byte) {
+	ms.SetKey(key)
 }

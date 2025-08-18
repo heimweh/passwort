@@ -645,6 +645,94 @@ func (x *ListResponse) GetError() string {
 	return ""
 }
 
+type InitRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InitRequest) Reset() {
+	*x = InitRequest{}
+	mi := &file_api_vault_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InitRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InitRequest) ProtoMessage() {}
+
+func (x *InitRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_vault_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InitRequest.ProtoReflect.Descriptor instead.
+func (*InitRequest) Descriptor() ([]byte, []int) {
+	return file_api_vault_proto_rawDescGZIP(), []int{14}
+}
+
+type InitResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Shares        []string               `protobuf:"bytes,1,rep,name=shares,proto3" json:"shares,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InitResponse) Reset() {
+	*x = InitResponse{}
+	mi := &file_api_vault_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InitResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InitResponse) ProtoMessage() {}
+
+func (x *InitResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_vault_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InitResponse.ProtoReflect.Descriptor instead.
+func (*InitResponse) Descriptor() ([]byte, []int) {
+	return file_api_vault_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *InitResponse) GetShares() []string {
+	if x != nil {
+		return x.Shares
+	}
+	return nil
+}
+
+func (x *InitResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_api_vault_proto protoreflect.FileDescriptor
 
 const file_api_vault_proto_rawDesc = "" +
@@ -680,7 +768,11 @@ const file_api_vault_proto_rawDesc = "" +
 	"\vListRequest\"8\n" +
 	"\fListResponse\x12\x12\n" +
 	"\x04keys\x18\x01 \x03(\tR\x04keys\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error2\xf1\x02\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\r\n" +
+	"\vInitRequest\"<\n" +
+	"\fInitResponse\x12\x16\n" +
+	"\x06shares\x18\x01 \x03(\tR\x06shares\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error2\xa2\x03\n" +
 	"\fVaultService\x12/\n" +
 	"\x04Seal\x12\x12.vault.SealRequest\x1a\x13.vault.SealResponse\x125\n" +
 	"\x06Unseal\x12\x14.vault.UnsealRequest\x1a\x15.vault.UnsealResponse\x125\n" +
@@ -688,7 +780,8 @@ const file_api_vault_proto_rawDesc = "" +
 	"\x03Get\x12\x11.vault.GetRequest\x1a\x12.vault.GetResponse\x12,\n" +
 	"\x03Set\x12\x11.vault.SetRequest\x1a\x12.vault.SetResponse\x125\n" +
 	"\x06Delete\x12\x14.vault.DeleteRequest\x1a\x15.vault.DeleteResponse\x12/\n" +
-	"\x04List\x12\x12.vault.ListRequest\x1a\x13.vault.ListResponseB)Z'github.com/heimweh/passwort/api/vaultpbb\x06proto3"
+	"\x04List\x12\x12.vault.ListRequest\x1a\x13.vault.ListResponse\x12/\n" +
+	"\x04Init\x12\x12.vault.InitRequest\x1a\x13.vault.InitResponseB)Z'github.com/heimweh/passwort/api/vaultpbb\x06proto3"
 
 var (
 	file_api_vault_proto_rawDescOnce sync.Once
@@ -702,7 +795,7 @@ func file_api_vault_proto_rawDescGZIP() []byte {
 	return file_api_vault_proto_rawDescData
 }
 
-var file_api_vault_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_api_vault_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_api_vault_proto_goTypes = []any{
 	(*SealRequest)(nil),    // 0: vault.SealRequest
 	(*SealResponse)(nil),   // 1: vault.SealResponse
@@ -718,6 +811,8 @@ var file_api_vault_proto_goTypes = []any{
 	(*DeleteResponse)(nil), // 11: vault.DeleteResponse
 	(*ListRequest)(nil),    // 12: vault.ListRequest
 	(*ListResponse)(nil),   // 13: vault.ListResponse
+	(*InitRequest)(nil),    // 14: vault.InitRequest
+	(*InitResponse)(nil),   // 15: vault.InitResponse
 }
 var file_api_vault_proto_depIdxs = []int32{
 	0,  // 0: vault.VaultService.Seal:input_type -> vault.SealRequest
@@ -727,15 +822,17 @@ var file_api_vault_proto_depIdxs = []int32{
 	8,  // 4: vault.VaultService.Set:input_type -> vault.SetRequest
 	10, // 5: vault.VaultService.Delete:input_type -> vault.DeleteRequest
 	12, // 6: vault.VaultService.List:input_type -> vault.ListRequest
-	1,  // 7: vault.VaultService.Seal:output_type -> vault.SealResponse
-	3,  // 8: vault.VaultService.Unseal:output_type -> vault.UnsealResponse
-	5,  // 9: vault.VaultService.Status:output_type -> vault.StatusResponse
-	7,  // 10: vault.VaultService.Get:output_type -> vault.GetResponse
-	9,  // 11: vault.VaultService.Set:output_type -> vault.SetResponse
-	11, // 12: vault.VaultService.Delete:output_type -> vault.DeleteResponse
-	13, // 13: vault.VaultService.List:output_type -> vault.ListResponse
-	7,  // [7:14] is the sub-list for method output_type
-	0,  // [0:7] is the sub-list for method input_type
+	14, // 7: vault.VaultService.Init:input_type -> vault.InitRequest
+	1,  // 8: vault.VaultService.Seal:output_type -> vault.SealResponse
+	3,  // 9: vault.VaultService.Unseal:output_type -> vault.UnsealResponse
+	5,  // 10: vault.VaultService.Status:output_type -> vault.StatusResponse
+	7,  // 11: vault.VaultService.Get:output_type -> vault.GetResponse
+	9,  // 12: vault.VaultService.Set:output_type -> vault.SetResponse
+	11, // 13: vault.VaultService.Delete:output_type -> vault.DeleteResponse
+	13, // 14: vault.VaultService.List:output_type -> vault.ListResponse
+	15, // 15: vault.VaultService.Init:output_type -> vault.InitResponse
+	8,  // [8:16] is the sub-list for method output_type
+	0,  // [0:8] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
@@ -752,7 +849,7 @@ func file_api_vault_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_vault_proto_rawDesc), len(file_api_vault_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

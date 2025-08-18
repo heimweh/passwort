@@ -26,6 +26,7 @@ const (
 	VaultService_Set_FullMethodName    = "/vault.VaultService/Set"
 	VaultService_Delete_FullMethodName = "/vault.VaultService/Delete"
 	VaultService_List_FullMethodName   = "/vault.VaultService/List"
+	VaultService_Init_FullMethodName   = "/vault.VaultService/Init"
 )
 
 // VaultServiceClient is the client API for VaultService service.
@@ -39,6 +40,7 @@ type VaultServiceClient interface {
 	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
+	Init(ctx context.Context, in *InitRequest, opts ...grpc.CallOption) (*InitResponse, error)
 }
 
 type vaultServiceClient struct {
@@ -119,6 +121,16 @@ func (c *vaultServiceClient) List(ctx context.Context, in *ListRequest, opts ...
 	return out, nil
 }
 
+func (c *vaultServiceClient) Init(ctx context.Context, in *InitRequest, opts ...grpc.CallOption) (*InitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InitResponse)
+	err := c.cc.Invoke(ctx, VaultService_Init_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // VaultServiceServer is the server API for VaultService service.
 // All implementations must embed UnimplementedVaultServiceServer
 // for forward compatibility.
@@ -130,6 +142,7 @@ type VaultServiceServer interface {
 	Set(context.Context, *SetRequest) (*SetResponse, error)
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	List(context.Context, *ListRequest) (*ListResponse, error)
+	Init(context.Context, *InitRequest) (*InitResponse, error)
 	mustEmbedUnimplementedVaultServiceServer()
 }
 
@@ -160,6 +173,9 @@ func (UnimplementedVaultServiceServer) Delete(context.Context, *DeleteRequest) (
 }
 func (UnimplementedVaultServiceServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedVaultServiceServer) Init(context.Context, *InitRequest) (*InitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Init not implemented")
 }
 func (UnimplementedVaultServiceServer) mustEmbedUnimplementedVaultServiceServer() {}
 func (UnimplementedVaultServiceServer) testEmbeddedByValue()                      {}
@@ -308,6 +324,24 @@ func _VaultService_List_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VaultService_Init_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VaultServiceServer).Init(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VaultService_Init_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VaultServiceServer).Init(ctx, req.(*InitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // VaultService_ServiceDesc is the grpc.ServiceDesc for VaultService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -342,6 +376,10 @@ var VaultService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _VaultService_List_Handler,
+		},
+		{
+			MethodName: "Init",
+			Handler:    _VaultService_Init_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

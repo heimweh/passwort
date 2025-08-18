@@ -24,6 +24,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVar(&serverAddr, "server", "localhost:50051", "gRPC server address")
 
 	rootCmd.AddCommand(
+		initCmd(),
 		sealCmd(),
 		unsealCmd(),
 		statusCmd(),
@@ -198,6 +199,30 @@ func listCmd() *cobra.Command {
 			}
 			for _, k := range resp.Keys {
 				fmt.Println(k)
+			}
+		},
+	}
+}
+
+func initCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "init",
+		Short: "Initialize the vault and print shares",
+		Run: func(cmd *cobra.Command, args []string) {
+			client, conn, err := dial()
+			if err != nil {
+				fmt.Println("Dial error:", err)
+				os.Exit(1)
+			}
+			defer conn.Close()
+			resp, err := client.Init(context.Background(), &vaultpb.InitRequest{})
+			if err != nil || resp.Error != "" {
+				fmt.Println("Init error:", err, resp.GetError())
+				os.Exit(1)
+			}
+			fmt.Println("Distribute these shares securely. You need at least 2 to unseal:")
+			for i, s := range resp.Shares {
+				fmt.Printf("Share %d: %s\n", i+1, s)
 			}
 		},
 	}

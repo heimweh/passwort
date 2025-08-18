@@ -12,6 +12,7 @@ service VaultService {
   rpc Set(SetRequest) returns (SetResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc List(ListRequest) returns (ListResponse);
+  rpc Init(InitRequest) returns (InitResponse);
 }
 
 message SealRequest {}
@@ -58,5 +59,11 @@ message DeleteResponse {
 message ListRequest {}
 message ListResponse {
   repeated string keys = 1;
+  string error = 2;
+}
+
+message InitRequest {}
+message InitResponse {
+  repeated string shares = 1;
   string error = 2;
 }

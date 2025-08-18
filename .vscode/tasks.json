@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Build server and client",
+			"command": "go build ./cmd/server ./cmd/client",
+			"group": "build",
+			"problemMatcher": [
+				"$go"
+			]
+		}
+	]
+}

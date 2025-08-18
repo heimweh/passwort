@@ -11,6 +11,10 @@ type Store interface {
 	List() ([]string, error)
 	// Seal seals the vault, making it inaccessible until unsealed.
 	Seal() error
+	// Init initializes the vault with a key and shares.
+	// The key is split into shares, and the vault is sealed.
+	// Returns an error if the vault is already initialized.
+	Init() error
 	// Unseal unseals the vault using the provided keys.
 	Unseal(keys ...string) error
 	// Status returns the current status of the vault, such as whether it is sealed or unsealed.

@@ -1,50 +1,111 @@
 package vault
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
+	"fmt"
+	"io"
 	"sync"
+
+	"github.com/hashicorp/vault/shamir"
+	"golang.org/x/crypto/scrypt"
 )
 
 type MemoryStore struct {
 	data   map[string]string
 	sealed bool
+	key    []byte
+	shares [][]byte
 	mu     sync.RWMutex
 }
 
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
 		data:   make(map[string]string),
-		sealed: false,
+		sealed: true,
 	}
+}
+
+func deriveKey(passphrase string) ([]byte, error) {
+	return scrypt.Key([]byte(passphrase), []byte("vault_salt"), 1<<15, 8, 1, 32)
+}
+
+func encrypt(key, plaintext []byte) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
+	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
+}
+
+func decrypt(key []byte, enc string) (string, error) {
+	ciphertext, err := base64.StdEncoding.DecodeString(enc)
+	if err != nil {
+		return "", err
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	if len(ciphertext) < gcm.NonceSize() {
+		return "", errors.New("ciphertext too short")
+	}
+	nonce := ciphertext[:gcm.NonceSize()]
+	data := ciphertext[gcm.NonceSize():]
+	plaintext, err := gcm.Open(nil, nonce, data, nil)
+	if err != nil {
+		return "", err
+	}
+	return string(plaintext), nil
 }
 
 func (m *MemoryStore) Get(key string) (string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	if m.sealed {
+	if m.sealed || m.key == nil {
 		return "", errors.New("vault is sealed")
 	}
-	val, ok := m.data[key]
+	enc, ok := m.data[key]
 	if !ok {
 		return "", errors.New("key not found")
 	}
-	return val, nil
+	return decrypt(m.key, enc)
 }
 
 func (m *MemoryStore) Set(key, value string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.sealed {
+	if m.sealed || m.key == nil {
 		return errors.New("vault is sealed")
 	}
-	m.data[key] = value
+	enc, err := encrypt(m.key, []byte(value))
+	if err != nil {
+		return err
+	}
+	m.data[key] = enc
 	return nil
 }
 
 func (m *MemoryStore) Delete(key string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.sealed {
+	if m.sealed || m.key == nil {
 		return errors.New("vault is sealed")
 	}
 	if _, ok := m.data[key]; !ok {
@@ -57,7 +118,7 @@ func (m *MemoryStore) Delete(key string) error {
 func (m *MemoryStore) List() ([]string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	if m.sealed {
+	if m.sealed || m.key == nil {
 		return nil, errors.New("vault is sealed")
 	}
 	keys := make([]string, 0, len(m.data))
@@ -70,15 +131,54 @@ func (m *MemoryStore) List() ([]string, error) {
 func (m *MemoryStore) Seal() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if m.key == nil {
+		return errors.New("no key to split")
+	}
+	// Split key into 3 shares, require 2 to unseal
+	shares, err := shamir.Split(m.key, 3, 2)
+	if err != nil {
+		return err
+	}
+	m.shares = shares
 	m.sealed = true
+	m.key = nil
 	return nil
 }
 
 func (m *MemoryStore) Unseal(keys ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if len(keys) < 2 {
+		return errors.New("at least 2 shares required")
+	}
+	var shares [][]byte
+	for _, s := range keys {
+		share, err := base64.StdEncoding.DecodeString(s)
+		if err != nil {
+			return err
+		}
+		shares = append(shares, share)
+	}
+	key, err := shamir.Combine(shares)
+	if err != nil {
+		return err
+	}
+	m.key = key
 	m.sealed = false
 	return nil
+}
+
+func (m *MemoryStore) GetShares() ([]string, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if len(m.shares) == 0 {
+		return nil, errors.New("no shares available; seal first")
+	}
+	var out []string
+	for _, s := range m.shares {
+		out = append(out, base64.StdEncoding.EncodeToString(s))
+	}
+	return out, nil
 }
 
 func (m *MemoryStore) Status() (string, error) {
@@ -88,4 +188,56 @@ func (m *MemoryStore) Status() (string, error) {
 		return "sealed", nil
 	}
 	return "unsealed", nil
+}
+
+func (m *MemoryStore) SetKey(key []byte) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.key = key
+	m.sealed = false
+}
+
+func (m *MemoryStore) InitKey(key []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.key != nil {
+		return errors.New("vault already initialized")
+	}
+	m.key = key
+	m.sealed = false
+	return nil
+}
+
+func (m *MemoryStore) Init() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	fmt.Println(m.key, m.shares)
+	if m.key != nil || len(m.shares) > 0 {
+		return errors.New("vault already initialized")
+	}
+	key := make([]byte, 32)
+	if _, err := rand.Read(key); err != nil {
+		return err
+	}
+	shares, err := shamir.Split(key, 3, 2)
+	if err != nil {
+		return err
+	}
+	m.key = key
+	m.shares = shares
+	m.sealed = true
+
+	return nil
+}
+
+func (m *MemoryStore) Shares() [][]byte {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.shares
+}
+
+func (m *MemoryStore) IsEmpty() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return len(m.data) == 0
 }
