@@ -138,58 +138,51 @@ func (j *JSONStore) Seal() error {
 // SealAndGetShares seals the vault and returns the shares (for CLI/init only).
 func (j *JSONStore) SealAndGetShares() ([]string, error) {
 	j.mu.Lock()
+	defer j.mu.Unlock()
 	if j.key == nil {
-		j.mu.Unlock()
 		return nil, errors.New("no key to split")
 	}
 	shares, err := crypto.SplitKey(j.key, 3, 2)
 	if err != nil {
-		j.mu.Unlock()
 		return nil, err
 	}
 	j.sealed = true
 	j.key = nil
-	j.mu.Unlock()
 	// save() must be called after lock is released
-	j.save()
+	go j.save() // fire-and-forget, or handle error if needed
 	return shares, nil
 }
 
 func (j *JSONStore) Unseal(keys ...string) error {
 	j.mu.Lock()
+	defer j.mu.Unlock()
 	if len(keys) < 2 {
-		j.mu.Unlock()
 		return errors.New("at least 2 shares required")
 	}
 	key, err := crypto.CombineShares(keys...)
 	if err != nil {
-		j.mu.Unlock()
 		return fmt.Errorf("failed to combine shares: %w", err)
 	}
 	if err := vaultutil.StoreCheckKey(j.data, key); err != nil {
-		j.mu.Unlock()
 		return fmt.Errorf("invalid shares or wrong vault: %w", err)
 	}
 	j.key = key
 	j.sealed = false
-	j.mu.Unlock()
 	return nil
 }
 
 func (j *JSONStore) Init() error {
 	j.mu.Lock()
+	defer j.mu.Unlock()
 	if j.key != nil {
-		j.mu.Unlock()
 		return errors.New("vault already initialized")
 	}
 	key, err := vaultutil.StoreInit(j.data)
 	if err != nil {
-		j.mu.Unlock()
 		return err
 	}
 	j.key = key
 	j.sealed = true
-	j.mu.Unlock()
 	return j.save()
 }
 

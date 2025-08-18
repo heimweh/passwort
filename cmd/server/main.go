@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/heimweh/passwort/github.com/heimweh/passwort/api/vaultpb"
+	"github.com/heimweh/passwort/pkg/server"
 	"github.com/heimweh/passwort/pkg/vault"
 )
 
@@ -172,7 +173,9 @@ func main() {
 	}
 
 	// Start gRPC server
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(server.AuditUnaryInterceptor(logger)),
+	)
 	vaultpb.RegisterVaultServiceServer(grpcServer, &vaultServer{store: store})
 	listener, err := net.Listen("tcp", ":50051")
 	if err != nil {
