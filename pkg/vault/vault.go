@@ -13,7 +13,6 @@ type Store interface {
 	Seal() error
 	// Unseal unseals the vault using the provided keys.
 	Unseal(keys ...string) error
-
 	// Status returns the current status of the vault, such as whether it is sealed or unsealed.
 	Status() (string, error)
 }

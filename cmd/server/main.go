@@ -49,6 +49,38 @@ func (s *vaultServer) Status(ctx context.Context, req *vaultpb.StatusRequest) (*
 	return &vaultpb.StatusResponse{Status: status}, nil
 }
 
+func (s *vaultServer) Get(ctx context.Context, req *vaultpb.GetRequest) (*vaultpb.GetResponse, error) {
+	val, err := s.store.Get(req.Key)
+	if err != nil {
+		return &vaultpb.GetResponse{Error: err.Error()}, nil
+	}
+	return &vaultpb.GetResponse{Value: val}, nil
+}
+
+func (s *vaultServer) Set(ctx context.Context, req *vaultpb.SetRequest) (*vaultpb.SetResponse, error) {
+	err := s.store.Set(req.Key, req.Value)
+	if err != nil {
+		return &vaultpb.SetResponse{Error: err.Error()}, nil
+	}
+	return &vaultpb.SetResponse{}, nil
+}
+
+func (s *vaultServer) Delete(ctx context.Context, req *vaultpb.DeleteRequest) (*vaultpb.DeleteResponse, error) {
+	err := s.store.Delete(req.Key)
+	if err != nil {
+		return &vaultpb.DeleteResponse{Error: err.Error()}, nil
+	}
+	return &vaultpb.DeleteResponse{}, nil
+}
+
+func (s *vaultServer) List(ctx context.Context, req *vaultpb.ListRequest) (*vaultpb.ListResponse, error) {
+	keys, err := s.store.List()
+	if err != nil {
+		return &vaultpb.ListResponse{Error: err.Error()}, nil
+	}
+	return &vaultpb.ListResponse{Keys: keys}, nil
+}
+
 func main() {
 	logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 	store = vault.NewMemoryStore()

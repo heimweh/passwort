@@ -27,6 +27,10 @@ func main() {
 		sealCmd(),
 		unsealCmd(),
 		statusCmd(),
+		getCmd(),
+		setCmd(),
+		deleteCmd(),
+		listCmd(),
 	)
 
 	if err := rootCmd.Execute(); err != nil {
@@ -105,6 +109,96 @@ func statusCmd() *cobra.Command {
 				os.Exit(1)
 			}
 			fmt.Println("Vault status:", resp.Status)
+		},
+	}
+}
+
+func getCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "get [key]",
+		Short: "Get a value by key",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			client, conn, err := dial()
+			if err != nil {
+				fmt.Println("Dial error:", err)
+				os.Exit(1)
+			}
+			defer conn.Close()
+			resp, err := client.Get(context.Background(), &vaultpb.GetRequest{Key: args[0]})
+			if err != nil || resp.Error != "" {
+				fmt.Println("Get error:", err, resp.GetError())
+				os.Exit(1)
+			}
+			fmt.Println(resp.Value)
+		},
+	}
+}
+
+func setCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "set [key] [value]",
+		Short: "Set a value by key",
+		Args:  cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			client, conn, err := dial()
+			if err != nil {
+				fmt.Println("Dial error:", err)
+				os.Exit(1)
+			}
+			defer conn.Close()
+			resp, err := client.Set(context.Background(), &vaultpb.SetRequest{Key: args[0], Value: args[1]})
+			if err != nil || resp.Error != "" {
+				fmt.Println("Set error:", err, resp.GetError())
+				os.Exit(1)
+			}
+			fmt.Println("OK")
+		},
+	}
+}
+
+func deleteCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "delete [key]",
+		Short: "Delete a value by key",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			client, conn, err := dial()
+			if err != nil {
+				fmt.Println("Dial error:", err)
+				os.Exit(1)
+			}
+			defer conn.Close()
+			resp, err := client.Delete(context.Background(), &vaultpb.DeleteRequest{Key: args[0]})
+			if err != nil || resp.Error != "" {
+				fmt.Println("Delete error:", err, resp.GetError())
+				os.Exit(1)
+			}
+			fmt.Println("Deleted")
+		},
+	}
+}
+
+func listCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "list",
+		Short: "List all keys",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			client, conn, err := dial()
+			if err != nil {
+				fmt.Println("Dial error:", err)
+				os.Exit(1)
+			}
+			defer conn.Close()
+			resp, err := client.List(context.Background(), &vaultpb.ListRequest{})
+			if err != nil || resp.Error != "" {
+				fmt.Println("List error:", err, resp.GetError())
+				os.Exit(1)
+			}
+			for _, k := range resp.Keys {
+				fmt.Println(k)
+			}
 		},
 	}
 }
