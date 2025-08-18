@@ -3,6 +3,7 @@ package vault
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 
@@ -54,8 +55,7 @@ func (j *JSONStore) load() error {
 }
 
 func (j *JSONStore) save() error {
-	j.mu.RLock()
-	defer j.mu.RUnlock()
+	// save() must not take a lock; caller must hold the lock.
 	d := jsonStoreData{
 		Data:   j.data,
 		Sealed: j.sealed,
@@ -150,6 +150,7 @@ func (j *JSONStore) SealAndGetShares() ([]string, error) {
 	j.sealed = true
 	j.key = nil
 	j.mu.Unlock()
+	// save() must be called after lock is released
 	j.save()
 	return shares, nil
 }
@@ -163,11 +164,11 @@ func (j *JSONStore) Unseal(keys ...string) error {
 	key, err := crypto.CombineShares(keys...)
 	if err != nil {
 		j.mu.Unlock()
-		return err
+		return fmt.Errorf("failed to combine shares: %w", err)
 	}
 	if err := vaultutil.StoreCheckKey(j.data, key); err != nil {
 		j.mu.Unlock()
-		return err
+		return fmt.Errorf("invalid shares or wrong vault: %w", err)
 	}
 	j.key = key
 	j.sealed = false
