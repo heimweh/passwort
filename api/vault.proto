@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package vault;
+
+option go_package = "github.com/heimweh/passwort/api/vaultpb";
+
+service VaultService {
+  rpc Seal(SealRequest) returns (SealResponse);
+  rpc Unseal(UnsealRequest) returns (UnsealResponse);
+  rpc Status(StatusRequest) returns (StatusResponse);
+}
+
+message SealRequest {}
+message SealResponse {
+  string error = 1;
+}
+
+message UnsealRequest {
+  repeated string keys = 1;
+}
+message UnsealResponse {
+  string error = 1;
+}
+
+message StatusRequest {}
+message StatusResponse {
+  string status = 1;
+  string error = 2;
+}
