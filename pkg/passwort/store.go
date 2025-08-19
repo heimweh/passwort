@@ -11,6 +11,4 @@ type Store interface {
 	Delete(id string) error
 	// List returns a list of all stored password IDs.
 	List() ([]string, error)
-	// Close cleans up any resources used by the store.
-	Close() error
 }

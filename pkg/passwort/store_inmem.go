@@ -17,3 +17,43 @@ func NewInmemoryStore() Store {
 		store: make(map[string]string),
 	}
 }
+
+// Set stores a value for the given key in the in-memory store.
+func (s *InmemoryStore) Set(key, value string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.store[key] = value
+	return nil
+}
+
+// Get retrieves the value for the given key from the in-memory store.
+// Returns the value and true if found, or an empty string and false otherwise.
+func (s *InmemoryStore) Get(key string) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	val, ok := s.store[key]
+	if !ok {
+		return "", ErrMissingSecret // or return an error if preferred
+	}
+
+	return val, nil
+}
+
+// Delete removes the value for the given key from the in-memory store.
+func (s *InmemoryStore) Delete(key string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.store, key)
+	return nil
+}
+
+// ListKeys returns a slice of all keys in the in-memory store.
+func (s *InmemoryStore) ListKeys() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	keys := make([]string, 0, len(s.store))
+	for k := range s.store {
+		keys = append(keys, k)
+	}
+	return keys
+}
