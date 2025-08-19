@@ -34,7 +34,9 @@ func NewServer(store Store, options ...Option) *Server {
 func (s *Server) Handler() http.Handler {
 	r := gin.New()
 
-	r.POST("/set", func(c *gin.Context) {
+	api := r.Group("/api/v1")
+
+	api.POST("/set", func(c *gin.Context) {
 		key := c.Query("key")
 		val := c.Query("value")
 		if key == "" || val == "" {
@@ -48,7 +50,7 @@ func (s *Server) Handler() http.Handler {
 		c.Status(http.StatusOK)
 	})
 
-	r.GET("/get", func(c *gin.Context) {
+	api.GET("/get", func(c *gin.Context) {
 		key := c.Query("key")
 		if key == "" {
 			c.Status(http.StatusBadRequest)
@@ -62,7 +64,7 @@ func (s *Server) Handler() http.Handler {
 		c.String(http.StatusOK, val)
 	})
 
-	r.POST("/delete", func(c *gin.Context) {
+	api.POST("/delete", func(c *gin.Context) {
 		key := c.Query("key")
 		if key == "" {
 			c.Status(http.StatusBadRequest)
@@ -75,7 +77,7 @@ func (s *Server) Handler() http.Handler {
 		c.Status(http.StatusOK)
 	})
 
-	r.GET("/list", func(c *gin.Context) {
+	api.GET("/list", func(c *gin.Context) {
 		keys, err := s.store.List()
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
