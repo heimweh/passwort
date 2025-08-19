@@ -86,3 +86,8 @@ func (s *Server) Handler() http.Handler {
 
 	return r
 }
+
+// Run starts the Gin web server on the given address.
+func (s *Server) Run(addr string) error {
+	return s.Handler().(*gin.Engine).Run(addr)
+}
