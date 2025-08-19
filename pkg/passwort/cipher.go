@@ -15,7 +15,9 @@ import (
 
 // Cipher defines an interface for encryption and decryption.
 type Cipher interface {
+	// Encrypt encrypts the plaintext using the given password and returns the ciphertext and shares.
 	Encrypt(plaintext []byte, password string) (ciphertext []byte, shares [][]byte, err error)
+	// Decrypt decrypts the ciphertext using the shares and password, returning the original plaintext.
 	Decrypt(ciphertext []byte, shares [][]byte, password string) ([]byte, error)
 }
 
@@ -30,6 +32,7 @@ type ShamirScryptCipher struct {
 	KeyHMAC   []byte // HMAC of the derived key for password verification
 }
 
+// Encrypt encrypts the plaintext using the given password and returns the ciphertext and shares.
 func (c *ShamirScryptCipher) Encrypt(plaintext []byte, password string) ([]byte, [][]byte, error) {
 	key, err := scrypt.Key([]byte(password), make([]byte, 16), c.ScryptN, c.ScryptR, c.ScryptP, c.KeyLen)
 	if err != nil {
@@ -69,6 +72,7 @@ func (c *ShamirScryptCipher) Encrypt(plaintext []byte, password string) ([]byte,
 	return ciphertext, shares, nil
 }
 
+// Decrypt decrypts the ciphertext using the shares and password, returning the original plaintext.
 func (c *ShamirScryptCipher) Decrypt(ciphertext []byte, shares [][]byte, password string) ([]byte, error) {
 	secret, err := shamir.Combine(shares)
 	if err != nil {
