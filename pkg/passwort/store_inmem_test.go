@@ -42,14 +42,17 @@ func TestInmemoryStore_ListKeys(t *testing.T) {
 			t.Fatalf("Set failed: %v", err)
 		}
 	}
-	gotKeys := s.ListKeys()
+	gotKeys, err := s.List()
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
 	keyMap := make(map[string]bool)
 	for _, k := range gotKeys {
 		keyMap[k] = true
 	}
 	for _, k := range keys {
 		if !keyMap[k] {
-			t.Errorf("ListKeys missing key %q", k)
+			t.Errorf("List missing key %q", k)
 		}
 	}
 }

@@ -47,13 +47,13 @@ func (s *InmemoryStore) Delete(key string) error {
 	return nil
 }
 
-// ListKeys returns a slice of all keys in the in-memory store.
-func (s *InmemoryStore) ListKeys() []string {
+// List returns a slice of all keys in the in-memory store, implementing the Store interface.
+func (s *InmemoryStore) List() ([]string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	keys := make([]string, 0, len(s.store))
 	for k := range s.store {
 		keys = append(keys, k)
 	}
-	return keys
+	return keys, nil
 }
