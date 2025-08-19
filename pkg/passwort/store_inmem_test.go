@@ -56,8 +56,8 @@ func TestInmemoryStore_SetGetDelete(t *testing.T) {
 
 func TestInmemoryStore_List(t *testing.T) {
 	tests := []struct {
-		name  string
-		keys  []string
+		name string
+		keys []string
 	}{
 		{"empty store", []string{}},
 		{"multiple keys", []string{"a", "b", "c"}},
