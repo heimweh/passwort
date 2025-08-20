@@ -13,16 +13,16 @@ import (
 	"golang.org/x/crypto/scrypt"
 )
 
-// Cipher defines an interface for encryption and decryption.
-type Cipher interface {
+// SecretsManager defines an interface for encryption and decryption with secret sharing.
+type SecretsManager interface {
 	// Encrypt encrypts the plaintext using the given password and returns the ciphertext and shares.
 	Encrypt(plaintext []byte, password string) (ciphertext []byte, shares [][]byte, err error)
 	// Decrypt decrypts the ciphertext using the shares and password, returning the original plaintext.
 	Decrypt(ciphertext []byte, shares [][]byte, password string) ([]byte, error)
 }
 
-// ShamirScryptCipher implements Cipher using scrypt for key derivation and Shamir for key splitting.
-type ShamirScryptCipher struct {
+// ShamirScryptSecretsManager implements SecretsManager using scrypt for key derivation and Shamir for key splitting.
+type ShamirScryptSecretsManager struct {
 	// ScryptN is the cost factor for scrypt.
 	ScryptN int
 	// ScryptR is the block size for scrypt.
@@ -41,7 +41,7 @@ type ShamirScryptCipher struct {
 }
 
 // Encrypt encrypts the plaintext using the given password and returns the ciphertext and shares.
-func (c *ShamirScryptCipher) Encrypt(plaintext []byte, password string) ([]byte, [][]byte, error) {
+func (c *ShamirScryptSecretsManager) Encrypt(plaintext []byte, password string) ([]byte, [][]byte, error) {
 	key, err := scrypt.Key([]byte(password), make([]byte, 16), c.ScryptN, c.ScryptR, c.ScryptP, c.KeyLen)
 	if err != nil {
 		return nil, nil, err
@@ -81,7 +81,7 @@ func (c *ShamirScryptCipher) Encrypt(plaintext []byte, password string) ([]byte,
 }
 
 // Decrypt decrypts the ciphertext using the shares and password, returning the original plaintext.
-func (c *ShamirScryptCipher) Decrypt(ciphertext []byte, shares [][]byte, password string) ([]byte, error) {
+func (c *ShamirScryptSecretsManager) Decrypt(ciphertext []byte, shares [][]byte, password string) ([]byte, error) {
 	secret, err := shamir.Combine(shares)
 	if err != nil {
 		return nil, err
@@ -117,9 +117,9 @@ func (c *ShamirScryptCipher) Decrypt(ciphertext []byte, shares [][]byte, passwor
 	return gcm.Open(nil, nonce, enc, nil)
 }
 
-// NewShamirScryptCipher creates a new ShamirScryptCipher with the specified parameters.
-func NewShamirScryptCipher(scryptN, scryptR, scryptP, keyLen, shares, threshold int) Cipher {
-	return &ShamirScryptCipher{
+// NewShamirScryptSecretsManager creates a new ShamirScryptSecretsManager with the specified parameters.
+func NewShamirScryptSecretsManager(scryptN, scryptR, scryptP, keyLen, shares, threshold int) SecretsManager {
+	return &ShamirScryptSecretsManager{
 		ScryptN:   scryptN,
 		ScryptR:   scryptR,
 		ScryptP:   scryptP,

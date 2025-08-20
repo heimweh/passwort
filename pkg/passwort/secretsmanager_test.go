@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestShamirScryptCipher_EncryptDecrypt(t *testing.T) {
-	cipher := &ShamirScryptCipher{
+func TestShamirScryptSecretsManager_EncryptDecrypt(t *testing.T) {
+	mgr := &ShamirScryptSecretsManager{
 		ScryptN:   1 << 15,
 		ScryptR:   8,
 		ScryptP:   1,
@@ -27,12 +27,12 @@ func TestShamirScryptCipher_EncryptDecrypt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ciphertext, shares, err := cipher.Encrypt(tt.plaintext, tt.password)
+			ciphertext, shares, err := mgr.Encrypt(tt.plaintext, tt.password)
 			if err != nil {
 				t.Fatalf("Encrypt failed: %v", err)
 			}
 			// Use only threshold shares for decryption
-			dec, err := cipher.Decrypt(ciphertext, shares[:cipher.Threshold], tt.password)
+			dec, err := mgr.Decrypt(ciphertext, shares[:mgr.Threshold], tt.password)
 			if err != nil {
 				t.Fatalf("Decrypt failed: %v", err)
 			}
@@ -43,8 +43,8 @@ func TestShamirScryptCipher_EncryptDecrypt(t *testing.T) {
 	}
 }
 
-func TestShamirScryptCipher_DecryptWrongPassword(t *testing.T) {
-	encCipher := &ShamirScryptCipher{
+func TestShamirScryptSecretsManager_DecryptWrongPassword(t *testing.T) {
+	encMgr := &ShamirScryptSecretsManager{
 		ScryptN:   1 << 15,
 		ScryptR:   8,
 		ScryptP:   1,
@@ -54,21 +54,21 @@ func TestShamirScryptCipher_DecryptWrongPassword(t *testing.T) {
 	}
 	plaintext := []byte("secret")
 	password := "rightpass"
-	ciphertext, shares, err := encCipher.Encrypt(plaintext, password)
+	ciphertext, shares, err := encMgr.Encrypt(plaintext, password)
 	if err != nil {
 		t.Fatalf("Encrypt failed: %v", err)
 	}
 	// Simulate loading HMAC from storage
-	decCipher := &ShamirScryptCipher{
-		ScryptN:   encCipher.ScryptN,
-		ScryptR:   encCipher.ScryptR,
-		ScryptP:   encCipher.ScryptP,
-		KeyLen:    encCipher.KeyLen,
-		Shares:    encCipher.Shares,
-		Threshold: encCipher.Threshold,
-		KeyHMAC:   encCipher.KeyHMAC,
+	decMgr := &ShamirScryptSecretsManager{
+		ScryptN:   encMgr.ScryptN,
+		ScryptR:   encMgr.ScryptR,
+		ScryptP:   encMgr.ScryptP,
+		KeyLen:    encMgr.KeyLen,
+		Shares:    encMgr.Shares,
+		Threshold: encMgr.Threshold,
+		KeyHMAC:   encMgr.KeyHMAC,
 	}
-	_, err = decCipher.Decrypt(ciphertext, shares[:decCipher.Threshold], "wrongpass")
+	_, err = decMgr.Decrypt(ciphertext, shares[:decMgr.Threshold], "wrongpass")
 	if err == nil {
 		t.Error("Decrypt with wrong password should fail")
 	}
