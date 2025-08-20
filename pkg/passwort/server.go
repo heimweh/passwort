@@ -58,27 +58,23 @@ func (s *Server) Handler() http.Handler {
 	api := r.Group("/api/v1", authMiddleware)
 
 	type secretRequest struct {
+		Key   string `json:"key"`
 		Value string `json:"value"`
 	}
 
 	// Create secret
 	api.POST("/secrets", func(c *gin.Context) {
 		var req secretRequest
-		if err := c.ShouldBindJSON(&req); err != nil || req.Value == "" {
+		if err := c.ShouldBindJSON(&req); err != nil || req.Key == "" || req.Value == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 			return
 		}
-		// Generate a new ID (for demo, use a UUID or similar in production)
-		id := c.Query("id")
-		if id == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "missing id"})
-			return
-		}
-		if err := s.store.Set(id, req.Value); err != nil {
+
+		if err := s.store.Set(req.Key, req.Value); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"key": id, "value": req.Value})
+		c.JSON(http.StatusCreated, gin.H{"key": req.Key, "value": req.Value})
 	})
 
 	// Get secret
