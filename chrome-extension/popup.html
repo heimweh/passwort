@@ -1,22 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="bg-gray-100 dark:bg-gray-900">
 <head>
-  <title>Passwort API Client</title>
-  <style>
-    body { font-family: sans-serif; margin: 16px; }
-    input, button { margin: 4px 0; }
-  </style>
-</head>
-<body>
-  <h2>Passwort API</h2>
-  <label>Key: <input id="key" type="text"></label><br>
-  <label>Value: <input id="value" type="text"></label><br>
-  <button id="setBtn">Set</button>
-  <button id="getBtn">Get</button>
-  <button id="deleteBtn">Delete</button><br><br>
-  <label>Auth Token: <input id="authToken" type="text" style="width: 180px"></label>
-  <button id="saveTokenBtn">Save Token</button><br>
-  <pre id="output"></pre>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Passwort Extension</title>
+  <link href="tailwind.gen.css" rel="stylesheet">
   <script src="popup.js"></script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 p-4 min-w-[320px]">
+  <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold text-blue-700 dark:text-blue-300">Passwort</h1>
+      <button id="themeToggleBtn" class="text-xl focus:outline-none" title="Toggle light/dark mode">
+        <span id="themeToggleIcon">🌙</span>
+      </button>
+    </div>
+    <div class="mb-4">
+      <label for="authToken" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Auth Token</label>
+      <div class="flex gap-2">
+        <input id="authToken" type="text" class="flex-1 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-gray-100" placeholder="Enter token">
+        <button id="saveTokenBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">Save</button>
+      </div>
+    </div>
+    <div class="mb-4">
+      <label for="key" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Key</label>
+      <input id="key" type="text" class="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-gray-100" placeholder="Key">
+    </div>
+    <div class="mb-4">
+      <label for="value" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Value</label>
+      <input id="value" type="text" class="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-gray-100" placeholder="Value">
+    </div>
+    <div class="flex gap-2 mb-4">
+      <button id="setBtn" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">Set</button>
+      <button id="getBtn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">Get</button>
+      <button id="deleteBtn" class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+    </div>
+    <div id="output" class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded p-2 min-h-[40px] text-sm text-gray-800 dark:text-gray-100"></div>
+  </div>
 </body>
 </html>
