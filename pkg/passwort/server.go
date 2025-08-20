@@ -12,6 +12,9 @@ type Server struct {
 
 	// cipher is the encryption/decryption mechanism used by the server.
 	cipher Cipher
+
+	// authToken is the token used for authenticating requests.
+	authToken string
 }
 
 // Option defines a function type for configuring the Server.
@@ -30,11 +33,27 @@ func NewServer(store Store, options ...Option) *Server {
 	return s
 }
 
+// Optionally, you can add an Option to set the auth token
+func WithAuthToken(token string) Option {
+	return func(s *Server) {
+		s.authToken = token
+	}
+}
+
 // Handler returns a gin.Engine that exposes endpoints for the store operations using Gin.
 func (s *Server) Handler() http.Handler {
 	r := gin.New()
 
-	api := r.Group("/api/v1")
+	authMiddleware := func(c *gin.Context) {
+		token := c.GetHeader("Authorization")
+		if s.authToken != "" && token != s.authToken {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		c.Next()
+	}
+
+	api := r.Group("/api/v1", authMiddleware)
 
 	api.POST("/set", func(c *gin.Context) {
 		key := c.Query("key")
