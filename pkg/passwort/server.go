@@ -125,12 +125,22 @@ func (s *Server) Handler() http.Handler {
 		c.Status(http.StatusNoContent)
 	})
 
-	// List secrets
+	// List secrets (with optional search)
 	api.GET("/secrets", func(c *gin.Context) {
+		search := c.Query("search")
 		keys, err := s.store.List()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
+		}
+		if search != "" {
+			filtered := make([]string, 0, len(keys))
+			for _, k := range keys {
+				if strings.Contains(strings.ToLower(k), strings.ToLower(search)) {
+					filtered = append(filtered, k)
+				}
+			}
+			keys = filtered
 		}
 		c.JSON(http.StatusOK, gin.H{"keys": keys})
 	})
