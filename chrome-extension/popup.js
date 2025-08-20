@@ -100,6 +100,45 @@ window.onload = function() {
         }
       });
     };
+
+    // Add search input and button logic
+    const searchInput = document.getElementById('search');
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn && searchInput) {
+      // Search on button click
+      searchBtn.onclick = doSearch;
+      // Search on Enter key
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          doSearch();
+        }
+      });
+      // Optional: live search while typing (debounced)
+      let debounceTimer;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(doSearch, 300);
+      });
+    }
+
+    function doSearch() {
+      const query = searchInput.value.trim();
+      if (!query) {
+        setOutput('Please enter a search term.');
+        return;
+      }
+      chrome.storage.local.get(['authToken'], async (result) => {
+        const AUTH_TOKEN = result.authToken || '';
+        try {
+          const res = await fetch(`${API_URL}/secrets?search=${encodeURIComponent(query)}`, {
+            headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+          });
+          setOutput(await res.text());
+        } catch (e) {
+          setOutput(e.toString());
+        }
+      });
+    }
   }, 0);
 };
 
