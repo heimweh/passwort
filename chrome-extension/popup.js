@@ -139,6 +139,11 @@ window.onload = function() {
         }
       });
     }
+
+    const newSecretBtn = document.getElementById('newSecretBtn');
+    if (newSecretBtn) newSecretBtn.onclick = () => {
+      // Show new secret form logic here
+    };
   }, 0);
 };
 
