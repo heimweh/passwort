@@ -57,41 +57,53 @@ func (s *Server) Handler() http.Handler {
 
 	api := r.Group("/api/v1", authMiddleware)
 
-	api.POST("/set", func(c *gin.Context) {
-		key := c.Query("key")
-		val := c.Query("value")
-		if key == "" || val == "" {
+	type setRequest struct {
+		Value string `json:"value"`
+	}
+
+	api.POST("/set/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		if id == "" {
 			c.Status(http.StatusBadRequest)
 			return
 		}
-		if err := s.store.Set(key, val); err != nil {
+
+		var req setRequest
+		if err := c.ShouldBindJSON(&req); err != nil || id == "" || req.Value == "" {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		if err := s.store.Set(id, req.Value); err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
 		c.Status(http.StatusOK)
 	})
 
-	api.GET("/get", func(c *gin.Context) {
-		key := c.Query("key")
-		if key == "" {
+	api.GET("/get/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		if id == "" {
 			c.Status(http.StatusBadRequest)
 			return
 		}
-		val, err := s.store.Get(key)
+
+		val, err := s.store.Get(id)
 		if err != nil {
 			c.Status(http.StatusNotFound)
 			return
 		}
-		c.String(http.StatusOK, val)
+
+		c.JSON(http.StatusOK, gin.H{"key": id, "value": val})
 	})
 
-	api.POST("/delete", func(c *gin.Context) {
-		key := c.Query("key")
-		if key == "" {
+	api.POST("/delete/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		if id == "" {
 			c.Status(http.StatusBadRequest)
 			return
 		}
-		if err := s.store.Delete(key); err != nil {
+
+		if err := s.store.Delete(id); err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
@@ -104,7 +116,7 @@ func (s *Server) Handler() http.Handler {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		c.String(http.StatusOK, "%s", gin.H{"keys": keys})
+		c.JSON(http.StatusOK, gin.H{"keys": keys})
 	})
 
 	return r
