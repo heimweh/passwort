@@ -57,63 +57,83 @@ func (s *Server) Handler() http.Handler {
 
 	api := r.Group("/api/v1", authMiddleware)
 
-	type setRequest struct {
+	type secretRequest struct {
 		Value string `json:"value"`
 	}
 
-	api.POST("/set/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		if id == "" {
-			c.Status(http.StatusBadRequest)
+	// Create secret
+	api.POST("/secrets", func(c *gin.Context) {
+		var req secretRequest
+		if err := c.ShouldBindJSON(&req); err != nil || req.Value == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 			return
 		}
-
-		var req setRequest
-		if err := c.ShouldBindJSON(&req); err != nil || id == "" || req.Value == "" {
-			c.Status(http.StatusBadRequest)
+		// Generate a new ID (for demo, use a UUID or similar in production)
+		id := c.Query("id")
+		if id == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "missing id"})
 			return
 		}
 		if err := s.store.Set(id, req.Value); err != nil {
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.Status(http.StatusOK)
+		c.JSON(http.StatusCreated, gin.H{"key": id, "value": req.Value})
 	})
 
-	api.GET("/get/:id", func(c *gin.Context) {
+	// Get secret
+	api.GET("/secrets/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		if id == "" {
-			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "missing id"})
 			return
 		}
-
 		val, err := s.store.Get(id)
 		if err != nil {
-			c.Status(http.StatusNotFound)
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
-
 		c.JSON(http.StatusOK, gin.H{"key": id, "value": val})
 	})
 
-	api.POST("/delete/:id", func(c *gin.Context) {
+	// Update secret
+	api.PUT("/secrets/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		if id == "" {
-			c.Status(http.StatusBadRequest)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "missing id"})
 			return
 		}
-
-		if err := s.store.Delete(id); err != nil {
-			c.Status(http.StatusInternalServerError)
+		var req secretRequest
+		if err := c.ShouldBindJSON(&req); err != nil || req.Value == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 			return
 		}
-		c.Status(http.StatusOK)
+		if err := s.store.Set(id, req.Value); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"key": id, "value": req.Value})
 	})
 
-	api.GET("/list", func(c *gin.Context) {
+	// Delete secret
+	api.DELETE("/secrets/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		if id == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "missing id"})
+			return
+		}
+		if err := s.store.Delete(id); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.Status(http.StatusNoContent)
+	})
+
+	// List secrets
+	api.GET("/secrets", func(c *gin.Context) {
 		keys, err := s.store.List()
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"keys": keys})
