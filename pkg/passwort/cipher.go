@@ -23,13 +23,21 @@ type Cipher interface {
 
 // ShamirScryptCipher implements Cipher using scrypt for key derivation and Shamir for key splitting.
 type ShamirScryptCipher struct {
-	ScryptN   int
-	ScryptR   int
-	ScryptP   int
-	KeyLen    int
-	Shares    int
+	// ScryptN is the cost factor for scrypt.
+	ScryptN int
+	// ScryptR is the block size for scrypt.
+	ScryptR int
+	// ScryptP is the parallelization factor for scrypt.
+	ScryptP int
+	// KeyLen is the length of the derived key.
+	KeyLen int
+	// Shares is the total number of shares to generate.
+	Shares int
+	// Threshold is the minimum number of shares required to reconstruct the secret.
 	Threshold int
-	KeyHMAC   []byte // HMAC of the derived key for password verification
+
+	// KeyHMAC is the HMAC of the derived key for password verification.
+	KeyHMAC []byte
 }
 
 // Encrypt encrypts the plaintext using the given password and returns the ciphertext and shares.
@@ -107,4 +115,16 @@ func (c *ShamirScryptCipher) Decrypt(ciphertext []byte, shares [][]byte, passwor
 	nonce := ciphertext[:gcm.NonceSize()]
 	enc := ciphertext[gcm.NonceSize():]
 	return gcm.Open(nil, nonce, enc, nil)
+}
+
+// NewShamirScryptCipher creates a new ShamirScryptCipher with the specified parameters.
+func NewShamirScryptCipher(scryptN, scryptR, scryptP, keyLen, shares, threshold int) Cipher {
+	return &ShamirScryptCipher{
+		ScryptN:   scryptN,
+		ScryptR:   scryptR,
+		ScryptP:   scryptP,
+		KeyLen:    keyLen,
+		Shares:    shares,
+		Threshold: threshold,
+	}
 }
