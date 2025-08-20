@@ -2,6 +2,7 @@ package passwort
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,7 +46,8 @@ func (s *Server) Handler() http.Handler {
 	r := gin.New()
 
 	authMiddleware := func(c *gin.Context) {
-		token := c.GetHeader("Authorization")
+		token := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
+
 		if s.authToken != "" && token != s.authToken {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return

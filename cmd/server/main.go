@@ -13,6 +13,7 @@ import (
 func main() {
 	flagDebug := flag.Bool("debug", false, "enable debug logging")
 	flagStore := flag.String("store", "inmemory", "store type (inmemory, file, etc.)")
+	flagToken := flag.String("token", "", "authentication token for the server")
 
 	flag.Parse()
 
@@ -35,7 +36,7 @@ func main() {
 	var group errgroup.Group
 
 	group.Go(func() error {
-		server := passwort.NewServer(store)
+		server := passwort.NewServer(store, passwort.WithAuthToken(*flagToken))
 		slog.Info("server starting", "store", *flagStore)
 		return server.Run(":8080")
 	})
